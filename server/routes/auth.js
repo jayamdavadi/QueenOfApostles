@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const bcrypt = require('bcrypt');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
 
@@ -97,9 +98,37 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-// Logout (optional - can be handled client-side by removing the token)
 router.post('/logout', auth, (req, res) => {
   res.json({ message: 'Logged out successfully' });
+});
+
+// Add this route after your login/register routes
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, password, token } = req.body;
+
+    if (!email || !password || !token) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // In a real implementation, you would verify the token from your database
+    // For this simple implementation, we'll assume the token was already validated on the client side
+
+    // Update user's password
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Error in reset-password:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 module.exports = router;

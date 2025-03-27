@@ -5,7 +5,7 @@ import {
   Calendar,
   CheckCircle,
   MapPin,
-  DollarSign
+  DollarSign,
 } from 'lucide-react';
 import { BACKEND_URL } from '../constants';
 import { useAuth } from '../contexts/AuthContext';

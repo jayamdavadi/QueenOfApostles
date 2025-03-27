@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Utensils, CreditCard, ChevronRight, ChevronLeft, Plus, Trash2, Minus } from 'lucide-react';
+import { Calendar, Users, Utensils, CreditCard, ChevronRight, ChevronLeft, Plus, Trash2, Minus, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BACKEND_URL } from '../constants';
+import { PAYPAL_CLIENT_ID } from '../App';
 
 const ROOM_TYPES = [
   { id: 'Single', label: 'Single Room', capacity: 1, description: 'Perfect for solo travelers' },
@@ -20,6 +21,9 @@ const RoomBookingForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableRooms, setAvailableRooms] = useState([]);
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
     // Step 1: Basic Requirements
@@ -49,6 +53,86 @@ const RoomBookingForm = () => {
       }
     }]
   });
+
+  // Load PayPal SDK
+  useEffect(() => {
+    const addPayPalScript = () => {
+      const script = document.createElement('script');
+      script.src = `https://www.sandbox.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD`;
+      script.async = true;
+      script.onload = () => setPaypalLoaded(true);
+      document.body.appendChild(script);
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    };
+
+    if (!window.paypal) {
+      addPayPalScript();
+    } else {
+      setPaypalLoaded(true);
+    }
+  }, []);
+
+  // Render PayPal buttons when SDK is loaded and on step 5
+  useEffect(() => {
+    if (paypalLoaded && step === 5) {
+      renderPayPalButtons();
+    }
+  }, [paypalLoaded, step]);
+
+  const renderPayPalButtons = () => {
+    const totals = calculateTotal();
+    if (!totals.total || isNaN(totals.total) || totals.total <= 0) {
+      return;
+    }
+
+    // Clear any existing buttons
+    const container = document.getElementById('paypal-button-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    window.paypal
+      .Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'blue',
+          shape: 'rect',
+          label: 'pay'
+        },
+        createOrder: function(data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: totals.total.toString(),
+                currency_code: 'USD'
+              },
+              description: `Room Booking for ${calculateDays()} nights`
+            }]
+          });
+        },
+        onApprove: function(data, actions) {
+          setProcessingPayment(true);
+          return actions.order.capture()
+            .then(function(details) {
+              setProcessingPayment(false);
+              setPaymentSuccess(true);
+            })
+            .catch(function(error) {
+              setProcessingPayment(false);
+              setError('Payment failed. Please try again.');
+            });
+        },
+        onError: function(err) {
+          console.error('PayPal error:', err);
+          setProcessingPayment(false);
+          setError('Payment failed. Please try again.');
+        }
+      })
+      .render('#paypal-button-container');
+  };
 
   // Calculate number of days for the stay
   const calculateDays = () => {
@@ -250,6 +334,12 @@ const RoomBookingForm = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (!paymentSuccess) {
+      setError('Please complete the payment before confirming the booking.');
+      setLoading(false);
+      return;
+    }
 
     // Validate that all guests have rooms assigned
     const unassignedGuests = formData.guests.filter(guest => !guest.roomId);
@@ -732,13 +822,36 @@ const RoomBookingForm = () => {
               </div>
             </div>
             
+            <div className="border rounded-lg p-4">
+              <h4 className="font-medium mb-4">Payment</h4>
+              {processingPayment ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-700">Processing your payment...</p>
+                </div>
+              ) : paymentSuccess ? (
+                <div className="text-center py-4">
+                  <div className="text-green-600 mb-2">✓ Payment Successful</div>
+                  <p className="text-sm text-gray-600">You can now confirm your booking</p>
+                </div>
+              ) : (
+                <div>
+                  <div id="paypal-button-container" className="mt-4"></div>
+                  {!paypalLoaded && (
+                    <div className="text-center py-6 border border-gray-200 rounded-md">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">Loading payment options...</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {error && (
               <div className="bg-red-50 border-l-4 border-red-400 p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
+                    <Info className="h-5 w-5 text-red-400" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-red-700">{error}</p>
@@ -746,61 +859,6 @@ const RoomBookingForm = () => {
                 </div>
               </div>
             )}
-            
-            {/* Payment form would go here */}
-            {/* <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-4">Payment Information</h3>
-              <p className="text-gray-600 mb-4">
-                Your card will be charged ${totals.total} upon confirmation
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Card Number</label>
-                  <input
-                    type="text"
-                    placeholder="1234 5678 9012 3456"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Expiration</label>
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">CVC</label>
-                    <input
-                      type="text"
-                      placeholder="123"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name on Card</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Billing Zip Code</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div> */}
           </div>
         );
 
@@ -907,523 +965,3 @@ const RoomBookingForm = () => {
 };
 
 export default RoomBookingForm;
-
-
-// import React, { useState, useEffect } from 'react';
-// import { Users, CreditCard, ChevronRight, ChevronLeft } from 'lucide-react';
-// import { useNavigate } from 'react-router-dom';
-// import { BACKEND_URL } from '../constants';
-
-// const ROOM_TYPES = [
-//   { id: 'single', label: 'Single Room', capacity: 1, description: 'Perfect for solo travelers' },
-//   { id: 'double', label: 'Double Room', capacity: 2, description: 'Ideal for couples' },
-//   { id: 'family', label: 'Family Room', capacity: 4, description: 'Spacious room for families' },
-//   { id: 'suite', label: 'Suite', capacity: 2, description: 'Luxury suite with separate living area' },
-//   { id: 'deluxe', label: 'Deluxe Room', capacity: 2, description: 'Premium room with extra amenities' }
-// ];
-
-// const MEAL_PRICE = 25;
-
-// const RoomBookingForm = () => {
-//   const navigate = useNavigate();
-
-//   const [step, setStep] = useState(1);
-//   const [formData, setFormData] = useState({
-//     // Step 1: Basic Requirements
-//     numberOfGuests: 1,
-//     checkIn: '',
-//     checkOut: '',
-//     roomType: '',
-    
-//     // Step 2: Room Selection
-//     selectedRooms: [],
-    
-//     // Step 3: Meal Plans
-//     mealPlans: {
-//       breakfast: false,
-//       lunch: false,
-//       dinner: false
-//     },
-    
-//     // Step 4: Guest Information
-//     guests: [{
-//       name: '',
-//       email: '',
-//       phone: '',
-//       specialRequests: ''
-//     }]
-//   });
-  
-//   const [availableRooms, setAvailableRooms] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState('');
-
-//   // Check room availability when basic requirements change
-//   useEffect(() => {
-//     if (formData.checkIn && formData.checkOut && formData.roomType) {
-//       checkAvailability();
-//     }
-//   }, [formData.checkIn, formData.checkOut, formData.roomType]);
-
-//   const checkAvailability = async () => {
-//     setLoading(true);
-//     setError('');
-    
-//     try {
-//       const response = await fetch(`${BACKEND_URL}/api/rooms?${new URLSearchParams({
-//         checkIn: formData.checkIn,
-//         checkOut: formData.checkOut,
-//         type: formData.roomType,
-//         capacity: formData.numberOfGuests.toString()
-//       })}`);
-      
-//       if (!response.ok) {
-//         throw new Error('Failed to fetch available rooms');
-//       }
-      
-//       const rooms = await response.json();
-//       setAvailableRooms(rooms);
-      
-//       if (rooms.length === 0) {
-//         setError('No rooms available for selected dates and preferences');
-//       }
-//     } catch (err) {
-//       setError(err.message || 'Failed to check room availability');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleInputChange = (e) => {
-//     const { name, value, type, checked } = e.target;
-    
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: type === 'checkbox' ? checked : value
-//     }));
-//   };
-
-//   const handleMealPlanChange = (meal) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       mealPlans: {
-//         ...prev.mealPlans,
-//         [meal]: !prev.mealPlans[meal]
-//       }
-//     }));
-//   };
-
-//   const handleGuestInfoChange = (index, field, value) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       guests: prev.guests.map((guest, i) => 
-//         i === index ? { ...guest, [field]: value } : guest
-//       )
-//     }));
-//   };
-
-//   const calculateTotal = () => {
-//     const roomTotal = formData.selectedRooms.reduce((sum, room) => 
-//       sum + room.pricePerNight, 0);
-    
-//     const numberOfDays = Math.ceil(
-//       (new Date(formData.checkOut) - new Date(formData.checkIn)) / (1000 * 60 * 60 * 24)
-//     );
-    
-//     const mealTotal = Object.values(formData.mealPlans).filter(Boolean).length 
-//       * MEAL_PRICE 
-//       * formData.numberOfGuests 
-//       * numberOfDays;
-    
-//     return {
-//       roomTotal: roomTotal * numberOfDays,
-//       mealTotal,
-//       total: (roomTotal * numberOfDays) + mealTotal
-//     };
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setLoading(true);
-//     setError('');
-
-//     try {
-//       const token = localStorage.getItem('token');
-//       if (!token) {
-//         throw new Error('Please log in to complete your booking');
-//       }
-
-//       const bookingData = {
-//         rooms: formData.selectedRooms.map(room => room._id),
-//         checkIn: formData.checkIn,
-//         checkOut: formData.checkOut,
-//         numberOfGuests: formData.numberOfGuests,
-//         mealPlans: formData.mealPlans,
-//         guests: formData.guests,
-//         totalPrice: calculateTotal().total
-//       };
-
-//       const response = await fetch(`${BACKEND_URL}/api/rooms/book`, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           'Authorization': `Bearer ${token}`
-//         },
-//         body: JSON.stringify(bookingData)
-//       });
-
-//       if (!response.ok) {
-//         const data = await response.json();
-//         throw new Error(data.message || 'Failed to create booking');
-//       }
-
-//       const booking = await response.json();
-      
-//       // Redirect to confirmation page
-//       // navigate('/booking/confirmation', { 
-//       //   state: { 
-//       //     booking,
-//       //     total: calculateTotal().total
-//       //   }
-//       // });
-//     } catch (err) {
-//       setError(err.message || 'Failed to complete booking');
-//       setStep(1); // Return to first step if rooms are no longer available
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const renderStepContent = () => {
-//     switch (step) {
-//       case 1:
-//         return (
-//           <div className="space-y-6">
-//             <h2 className="text-xl font-semibold">Basic Requirements</h2>
-            
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700">Check-in Date</label>
-//                 <input
-//                   type="date"
-//                   name="checkIn"
-//                   value={formData.checkIn}
-//                   onChange={handleInputChange}
-//                   min={new Date().toISOString().split('T')[0]}
-//                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                   required
-//                 />
-//               </div>
-              
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700">Check-out Date</label>
-//                 <input
-//                   type="date"
-//                   name="checkOut"
-//                   value={formData.checkOut}
-//                   onChange={handleInputChange}
-//                   min={formData.checkIn}
-//                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                   required
-//                 />
-//               </div>
-//             </div>
-
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Number of Guests</label>
-//               <input
-//                 type="number"
-//                 name="numberOfGuests"
-//                 value={formData.numberOfGuests}
-//                 onChange={handleInputChange}
-//                 min="1"
-//                 max="6"
-//                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                 required
-//               />
-//             </div>
-
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-//               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                 {ROOM_TYPES.map(type => (
-//                   <label
-//                     key={type.id}
-//                     className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none
-//                       ${formData.roomType === type.id ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300'}`}
-//                   >
-//                     <input
-//                       type="radio"
-//                       name="roomType"
-//                       value={type.id}
-//                       checked={formData.roomType === type.id}
-//                       onChange={handleInputChange}
-//                       className="sr-only"
-//                     />
-//                     <div className="flex flex-col">
-//                       <span className="block text-sm font-medium text-gray-900">
-//                         {type.label}
-//                       </span>
-//                       <span className="mt-1 flex items-center text-sm text-gray-500">
-//                         {type.description}
-//                       </span>
-//                       <span className="mt-1 flex items-center text-sm text-gray-500">
-//                         <Users className="w-4 h-4 mr-1" />
-//                         Up to {type.capacity} guests
-//                       </span>
-//                     </div>
-//                   </label>
-//                 ))}
-//               </div>
-//             </div>
-//           </div>
-//         );
-
-//       case 2:
-//         return (
-//           <div className="space-y-6">
-//             <h2 className="text-xl font-semibold">Available Rooms</h2>
-            
-//             {loading ? (
-//               <div className="flex justify-center py-8">
-//                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-//               </div>
-//             ) : error ? (
-//               <div className="text-red-600 text-center py-4">{error}</div>
-//             ) : (
-//               <div className="grid grid-cols-1 gap-4">
-//                 {availableRooms.map(room => (
-//                   <label
-//                     key={room._id}
-//                     className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none
-//                       ${formData.selectedRooms.includes(room) ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300'}`}
-//                   >
-//                     <input
-//                       type="checkbox"
-//                       checked={formData.selectedRooms.includes(room)}
-//                       onChange={() => {
-//                         setFormData(prev => ({
-//                           ...prev,
-//                           selectedRooms: prev.selectedRooms.includes(room)
-//                             ? prev.selectedRooms.filter(r => r._id !== room._id)
-//                             : [...prev.selectedRooms, room]
-//                         }));
-//                       }}
-//                       className="sr-only"
-//                     />
-//                     <div className="flex flex-col">
-//                       <span className="block text-sm font-medium text-gray-900">
-//                         Room {room.roomNumber}
-//                       </span>
-//                       <span className="mt-1 text-sm text-gray-500">
-//                         ${room.pricePerNight} per night
-//                       </span>
-//                     </div>
-//                   </label>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-//         );
-
-//       case 3:
-//         return (
-//           <div className="space-y-6">
-//             <h2 className="text-xl font-semibold">Meal Plans</h2>
-            
-//             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-//               {['breakfast', 'lunch', 'dinner'].map(meal => (
-//                 <label
-//                   key={meal}
-//                   className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none
-//                     ${formData.mealPlans[meal] ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-300'}`}
-//                 >
-//                   <input
-//                     type="checkbox"
-//                     checked={formData.mealPlans[meal]}
-//                     onChange={() => handleMealPlanChange(meal)}
-//                     className="sr-only"
-//                   />
-//                   <div className="flex flex-col">
-//                     <span className="block text-sm font-medium text-gray-900">
-//                       {meal.charAt(0).toUpperCase() + meal.slice(1)}
-//                     </span>
-//                     <span className="mt-1 text-sm text-gray-500">
-//                       ${MEAL_PRICE} per person
-//                     </span>
-//                   </div>
-//                 </label>
-//               ))}
-//             </div>
-//           </div>
-//         );
-
-//       case 4:
-//         return (
-//           <div className="space-y-6">
-//             <h2 className="text-xl font-semibold">Guest Information</h2>
-            
-//             {formData.guests.map((guest, index) => (
-//               <div key={index} className="border rounded-lg p-4 space-y-4">
-//                 <h3 className="font-medium">
-//                   {index === 0 ? 'Primary Guest' : `Guest ${index + 1}`}
-//                 </h3>
-                
-//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700">Name</label>
-//                     <input
-//                       type="text"
-//                       value={guest.name}
-//                       onChange={(e) => handleGuestInfoChange(index, 'name', e.target.value)}
-//                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                       required
-//                     />
-//                   </div>
-                  
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700">Email</label>
-//                     <input
-//                       type="email"
-//                       value={guest.email}
-//                       onChange={(e) => handleGuestInfoChange(index, 'email', e.target.value)}
-//                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                       required
-//                     />
-//                   </div>
-                  
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700">Phone</label>
-//                     <input
-//                       type="tel"
-//                       value={guest.phone}
-//                       onChange={(e) => handleGuestInfoChange(index, 'phone', e.target.value)}
-//                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                       required
-//                     />
-//                   </div>
-                  
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700">Special Requests</label>
-//                     <textarea
-//                       value={guest.specialRequests}
-//                       onChange={(e) => handleGuestInfoChange(index, 'specialRequests', e.target.value)}
-//                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-//                       rows="2"
-//                     />
-//                   </div>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         );
-
-//       case 5:
-//         const totals = calculateTotal();
-//         return (
-//           <div className="space-y-6">
-//             <h2 className="text-xl font-semibold">Review & Payment</h2>
-            
-//             <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-//               <div className="border-b pb-4">
-//                 <h3 className="font-medium mb-2">Room Charges</h3>
-//                 {formData.selectedRooms.map(room => (
-//                   <div key={room._id} className="flex justify-between text-sm">
-//                     <span>Room {room.roomNumber}</span>
-//                     <span>${room.pricePerNight} per night</span>
-//                   </div>
-//                 ))}
-//               </div>
-              
-//               <div className="border-b pb-4">
-//                 <h3 className="font-medium mb-2">Meal Plan Charges</h3>
-//                 {Object.entries(formData.mealPlans).map(([meal, selected]) => 
-//                   selected && (
-//                     <div key={meal} className="flex justify-between text-sm">
-//                       <span>{meal.charAt(0).toUpperCase() + meal.slice(1)}</span>
-//                       <span>${MEAL_PRICE} per person per day</span>
-//                     </div>
-//                   )
-//                 )}
-//               </div>
-              
-//               <div className="text-lg font-bold flex justify-between">
-//                 <span>Total</span>
-//                 <span>${totals.total}</span>
-//               </div>
-//             </div>
-            
-//             {/* Payment form would go here */}
-//           </div>
-//         );
-
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <div className="max-w-3xl mx-auto p-6">
-//       <div className="mb-8">
-//         <div className="flex justify-between items-center">
-//           {[1, 2, 3, 4, 5].map((stepNumber) => (
-//             <div
-//               key={stepNumber}
-//               className={`flex items-center ${step >= stepNumber ? 'text-blue-600' : 'text-gray-400'}`}
-//             >
-//               <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-//                 ${step >= stepNumber ? 'border-blue-600 bg-blue-50' : 'border-gray-300'}`}>
-//                 {stepNumber}
-//               </div>
-//               <span className="ml-2 text-sm hidden md:inline">
-//                 {stepNumber === 1 ? 'Requirements' :
-//                  stepNumber === 2 ? 'Rooms' :
-//                  stepNumber === 3 ? 'Meals' :
-//                  stepNumber === 4 ? 'Guests' : 'Review'}
-//               </span>
-//               {stepNumber < 5 && <div className="w-12 h-0.5 mx-4 bg-gray-300" />}
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-
-//       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6">
-//         {renderStepContent()}
-        
-//         <div className="mt-8 flex justify-between">
-//           {step > 1 && (
-//             <button
-//               type="button"
-//               onClick={() => setStep(step - 1)}
-//               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-//             >
-//               <ChevronLeft className="w-5 h-5 mr-2" />
-//               Previous
-//             </button>
-//           )}
-          
-//           {step < 5 ? (
-//             <button
-//               type="button"
-//               onClick={() => setStep(step + 1)}
-//               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-//             >
-//               Next
-//               <ChevronRight className="w-5 h-5 ml-2" />
-//             </button>
-//           ) : (
-//             <button
-//               type="submit"
-//               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-//             >
-//               <CreditCard className="w-5 h-5 mr-2" />
-//               Complete Booking
-//             </button>
-//           )}
-//         </div>
-//       </form>
-//     </div>
-//   );
-// };
-
-// export default RoomBookingForm;

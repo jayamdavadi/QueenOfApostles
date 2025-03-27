@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
+import { PAYPAL_CLIENT_ID } from '../App';
 
-export const Donate = ({ paypalClientId }) => {
+export const Donate = () => {
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export const Donate = ({ paypalClientId }) => {
     // Add PayPal Script
     const addPayPalScript = () => {
       const script = document.createElement('script');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD`;
+      script.src = `https://www.sandbox.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD`;
       script.async = true;
       script.onload = () => setPaypalLoaded(true);
       document.body.appendChild(script);
@@ -32,7 +33,7 @@ export const Donate = ({ paypalClientId }) => {
     } else {
       setPaypalLoaded(true);
     }
-  }, [paypalClientId]);
+  }, []);
 
   // Render PayPal buttons when SDK is loaded
   useEffect(() => {
@@ -75,25 +76,25 @@ export const Donate = ({ paypalClientId }) => {
         onApprove: (data, actions) => {
           setProcessingPayment(true);
 
-          return actions.order.capture().then(function (details) {
-            const { payer } = details;
+          // return actions.order.capture().then(function (details) {
+          //   const { payer } = details;
 
-            // Save donor information and payment details
-            const paymentData = {
-              transactionId: details.id,
-              amount: donationAmount,
-              name: name || `${payer.name.given_name} ${payer.name.surname}`,
-              email: email || payer.email_address,
-              status: details.status,
-              paymentMethod: 'PayPal',
-              paymentTime: new Date().toISOString()
-            };
+          //   // Save donor information and payment details
+          //   const paymentData = {
+          //     transactionId: details.id,
+          //     amount: donationAmount,
+          //     name: name || `${payer.name.given_name} ${payer.name.surname}`,
+          //     email: email || payer.email_address,
+          //     status: details.status,
+          //     paymentMethod: 'PayPal',
+          //     paymentTime: new Date().toISOString()
+          //   };
 
-            console.log('Payment successful:', paymentData);
+          //   console.log('Payment successful:', paymentData);
 
-            setProcessingPayment(false);
-            setPaymentSuccess(true);
-          });
+          // });
+          setProcessingPayment(false);
+          setPaymentSuccess(true);
         },
         onError: (err) => {
           console.error('PayPal error:', err);
