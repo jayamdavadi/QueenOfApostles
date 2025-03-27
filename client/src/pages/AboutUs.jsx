@@ -1,3 +1,8 @@
+import Img1 from '../images/img1st.jpg';
+import Img2 from '../images/img2nd.jpg';
+import Img3 from '../images/img3rd.jpg';
+
+
 import React from 'react';
 import { Users, MapPin, Phone, Mail } from 'lucide-react';
 
@@ -20,9 +25,14 @@ export const AboutUs = () => {
             <div className="border-b pb-8">
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-1/4 mb-4 md:mb-0">
-                  <div className="bg-gray-200 rounded-lg h-60 w-full flex items-center justify-center">
-                    <p className="text-gray-500 text-lg">Photo</p>
+                  <div className="rounded-lg overflow-hidden w-75 h-65 md:w-48 md:h-65">
+                    <img
+                      src={Img1}
+                      alt="Fr. Pawel Nyrek OMI"
+                      className="object-cover w-full h-full rounded-lg"
+                    />
                   </div>
+
                 </div>
                 <div className="w-full md:w-3/4 md:pl-8">
                   <h3 className="text-xl font-bold mb-2">Fr. Pawel Nyrek OMI</h3>
@@ -44,9 +54,14 @@ export const AboutUs = () => {
             <div className="border-b pb-8">
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-1/4 mb-4 md:mb-0">
-                  <div className="bg-gray-200 rounded-lg h-60 w-full flex items-center justify-center">
-                    <p className="text-gray-500 text-lg">Photo</p>
+                  <div className="rounded-lg overflow-hidden w-40 h-65 md:w-75 md:h-65">
+                    <img
+                      src={Img2}
+                      alt="Fr. Pawel Ratajczak OMI"
+                      className="object-cover w-full h-full rounded-lg"
+                    />
                   </div>
+
                 </div>
                 <div className="w-full md:w-3/4 md:pl-8">
                   <h3 className="text-xl font-bold mb-2">Fr. Pawel Ratajczak OMI</h3>
@@ -74,9 +89,14 @@ export const AboutUs = () => {
             <div>
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-1/4 mb-4 md:mb-0">
-                  <div className="bg-gray-200 rounded-lg h-60 w-full flex items-center justify-center">
-                    <p className="text-gray-500 text-lg">Photo</p>
+                  <div className="rounded-lg overflow-hidden w-65 h-75 md:w-48 md:h-65">
+                    <img
+                      src={Img3}
+                      alt="Mrs. Anne Hales"
+                      className="object-cover w-full h-full rounded-lg"
+                    />
                   </div>
+
                 </div>
                 <div className="w-full md:w-3/4 md:pl-8">
                   <h3 className="text-xl font-bold mb-2">Mrs. Anne Hales</h3>
@@ -117,4 +137,4 @@ export const AboutUs = () => {
   );
 };
 
-export default AboutUs; 
+export default AboutUs;
