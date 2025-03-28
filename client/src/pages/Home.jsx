@@ -50,7 +50,7 @@ export const Home = () => {
               {
                 title: "Mindfulness Retreat",
                 description: "A week of meditation and self-discovery",
-                image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                image: "https://omilacombe.ca/wp-content/uploads/2023/05/Group-photo-850.jpg"
               },
               {
                 title: "Yoga Workshop",
