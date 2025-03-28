@@ -19,7 +19,7 @@ export const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-gray-800">Retreat Center</span>
+              <span className="text-xl font-bold text-gray-800">Queen of Apostles</span>
             </Link>
           </div>
 
@@ -64,7 +64,7 @@ export const Navbar = () => {
             ) :
               <>
                 <Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link>
-                <Link to="/donate" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                <Link to="/donate" className="text-gray-600 hover:text-gray-900">
                   Donate
                 </Link>
               </>
@@ -86,7 +86,7 @@ export const Navbar = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-gray-600 hover:text-gray-900">Login</Link>
+                <Link to="/login" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Login</Link>
                 <Link to="/signup" className="text-gray-600 hover:text-gray-900">Sign Up</Link>
               </div>
             )}

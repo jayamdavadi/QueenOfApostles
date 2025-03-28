@@ -11,7 +11,7 @@ export const Home = () => {
       <div 
         className="relative h-[600px] bg-cover bg-center"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80")'
+          backgroundImage: 'url("https://framerusercontent.com/images/D7zXNwvB4OLirwMPTc9uE7LfjQ.jpg?scale-down-to=2048")'
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-50" />
@@ -21,7 +21,7 @@ export const Home = () => {
               Find Your Perfect Retreat
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-2xl">
-              Experience tranquility and growth through our carefully curated programs and world-class facilities.
+            Discover peace, purpose, and renewal at Queen of Apostles Retreat Centre - where spiritual growth meets heartfelt hospitality.
             </p>
             <div className="flex flex-wrap gap-4">
               <button
