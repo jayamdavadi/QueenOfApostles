@@ -36,8 +36,8 @@ export const ProgramsList = () => {
                          program.description.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesPrice = priceFilter === 'all' ||
-      (priceFilter === 'under1000' && program.price < 1000) ||
-      (priceFilter === 'over1000' && program.price >= 1000);
+      (priceFilter === 'under1000' && program.price < 100) ||
+      (priceFilter === 'over1000' && program.price >= 100);
 
     const programDate = new Date(program.startDate);
     const now = new Date();
@@ -97,8 +97,8 @@ export const ProgramsList = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Prices</option>
-              <option value="under1000">Under $1000</option>
-              <option value="over1000">$1000 and above</option>
+              <option value="under1000">Under $100</option>
+              <option value="over1000">$100 and above</option>
             </select>
           </div>
 

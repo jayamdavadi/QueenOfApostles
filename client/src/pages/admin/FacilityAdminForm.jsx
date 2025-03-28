@@ -292,11 +292,11 @@ const FacilityAdminForm = () => {
                 required
               >
                 <option value="">Select Type</option>
-                <option value="Conference Room">Conference Room</option>
-                <option value="Banquet Hall">Banquet Hall</option>
+                <option value="Conference Room">Meditation Room</option>
+                <option value="Banquet Hall">Dinning Hall</option>
                 <option value="Meeting Room">Meeting Room</option>
                 <option value="Event Space">Event Space</option>
-                <option value="Ballroom">Ballroom</option>
+                <option value="Ballroom">Accomodation</option>
               </select>
             </div>
 
