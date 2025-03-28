@@ -22,6 +22,15 @@ import ProgramAdminList from './pages/admin/ProgramAdminList';
 import ProgramAdminForm from './pages/admin/ProgramAdminForm';
 import ContactAdminList from './pages/admin/ContactAdminList';
 import DonationPage from './pages/Donate';
+import BookingAdminList from './pages/admin/BookingAdminList';
+import RoomBookingAdminList from './pages/admin/RoomBookingAdminList';
+import AboutUs from './pages/AboutUs';
+import BookingDetailView from './pages/admin/BookingDetailView';
+import RoomBookingDetailView from './pages/admin/RoomBookingDetailView';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
+export const PAYPAL_CLIENT_ID = "AUEwkO2TO6LLT1jKAS8EQ3PdbO5JBLe8X3amwF6qnTb89V5EnRl7vzFtNP66Squd7so-gvekzcQNKrYy";
 
 function App() {
   return (
@@ -33,6 +42,7 @@ function App() {
             <Route path="*" element={<Home />} />
             <Route path="/donate" element={<DonationPage />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/programs" element={<ProgramsList />} />
             <Route path="/programs/:id" element={<ProgramDetails />} />
             <Route path="/facilities" element={<Facilities />} />
@@ -79,6 +89,30 @@ function App() {
               </PrivateRoute>
             }
             />
+            <Route path="/admin/bookings" element={
+              <PrivateRoute adminRoute>
+                <BookingAdminList />
+              </PrivateRoute>
+            }
+            />
+            <Route path="/admin/bookings/:id" element={
+              <PrivateRoute adminRoute>
+                <BookingDetailView />
+              </PrivateRoute>
+            }
+            />
+            <Route path="/admin/room-bookings" element={
+              <PrivateRoute adminRoute>
+                <RoomBookingAdminList />
+              </PrivateRoute>
+            }
+            />
+            <Route path="/admin/room-bookings/:id" element={
+              <PrivateRoute adminRoute>
+                <RoomBookingDetailView />
+              </PrivateRoute>
+            }
+            />
             <Route path="/admin/facility" element={
               <PrivateRoute adminRoute>
                 <FacilityAdminList />
@@ -106,6 +140,8 @@ function App() {
 
             <Route path="/login" element={<LoginForm />} />
             <Route path="/signup" element={<SignupForm />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </AuthProvider>
       </Router>

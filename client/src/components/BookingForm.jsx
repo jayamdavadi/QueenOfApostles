@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Utensils, BedDouble, Calendar, DollarSign } from 'lucide-react';
+import { Users, Utensils, BedDouble, Calendar, DollarSign, Info } from 'lucide-react';
 import { BACKEND_URL } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { PAYPAL_CLIENT_ID } from '../App';
 
 const MEAL_PREFERENCES = {
   VEGETARIAN: 'Vegetarian',
@@ -38,6 +39,9 @@ const BookingForm = ({ program }) => {
   const [step, setStep] = useState(1);
   const [totalPrice, setTotalPrice] = useState(program.price);
   const [errors, setErrors] = useState({});
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [booking, setBooking] = useState({
     numberOfGuests: 1,
     guests: [{
@@ -52,6 +56,91 @@ const BookingForm = ({ program }) => {
       dietaryRestrictions: []
     }]
   });
+
+  // Load PayPal SDK
+  useEffect(() => {
+    const addPayPalScript = () => {
+      const script = document.createElement('script');
+      script.src = `https://www.sandbox.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD`;
+      script.async = true;
+      script.onload = () => setPaypalLoaded(true);
+      document.body.appendChild(script);
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    };
+
+    if (!window.paypal) {
+      addPayPalScript();
+    } else {
+      setPaypalLoaded(true);
+    }
+  }, []);
+
+  // Render PayPal buttons when SDK is loaded and on step 3
+  useEffect(() => {
+    if (paypalLoaded && step === 3) {
+      renderPayPalButtons();
+    }
+  }, [paypalLoaded, step, totalPrice]);
+
+  const renderPayPalButtons = () => {
+    if (!totalPrice || isNaN(totalPrice) || totalPrice <= 0) {
+      return;
+    }
+
+    // Clear any existing buttons
+    const container = document.getElementById('paypal-button-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    window.paypal
+      .Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'blue',
+          shape: 'rect',
+          label: 'pay'
+        },
+        createOrder: function(data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: totalPrice.toString(),
+                currency_code: 'USD'
+              },
+              description: `Booking for ${program.title}`
+            }]
+          });
+        },
+        onApprove: function(data, actions) {
+          setProcessingPayment(true);
+          return actions.order.capture()
+            .then(function(details) {
+              setProcessingPayment(false);
+              setPaymentSuccess(true);
+            })
+            .catch(function(error) {
+              setProcessingPayment(false);
+              setErrors(prev => ({
+                ...prev,
+                payment: 'Payment failed. Please try again.'
+              }));
+            });
+        },
+        onError: function(err) {
+          console.error('PayPal error:', err);
+          setProcessingPayment(false);
+          setErrors(prev => ({
+            ...prev,
+            payment: 'Payment failed. Please try again.'
+          }));
+        }
+      })
+      .render('#paypal-button-container');
+  };
 
   const validateStep = (currentStep) => {
     const newErrors = {};
@@ -188,6 +277,14 @@ const BookingForm = ({ program }) => {
     if (!validateStep(step)) {
       return;
     }
+
+    if (!paymentSuccess) {
+      setErrors(prev => ({
+        ...prev,
+        payment: 'Please complete the payment before confirming the booking.'
+      }));
+      return;
+    }
     
     try {
       const response = await fetch(`${BACKEND_URL}/api/bookings`, {
@@ -204,7 +301,6 @@ const BookingForm = ({ program }) => {
       
       if (response.ok) {
         const data = await response.json();
-
         navigate(`/booking-confirmation/${data.booking._id}`);
       } else {
         const data = await response.json();
@@ -454,6 +550,38 @@ const BookingForm = ({ program }) => {
                   ))}
                 </div>
               </div>
+
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium mb-4">Payment</h4>
+                {processingPayment ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-lg text-gray-700">Processing your payment...</p>
+                  </div>
+                ) : paymentSuccess ? (
+                  <div className="text-center py-4">
+                    <div className="text-green-600 mb-2">✓ Payment Successful</div>
+                    <p className="text-sm text-gray-600">You can now confirm your booking</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div id="paypal-button-container" className="mt-4"></div>
+                    {!paypalLoaded && (
+                      <div className="text-center py-6 border border-gray-200 rounded-md">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-500">Loading payment options...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {errors.payment && (
+                <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded flex items-center">
+                  <Info className="w-5 h-5 mr-2 text-red-700" />
+                  {errors.payment}
+                </div>
+              )}
 
               {errors.submit && (
                 <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded">

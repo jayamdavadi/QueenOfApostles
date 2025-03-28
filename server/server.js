@@ -33,12 +33,20 @@ const facilityRoutes = require('./routes/facilities');
 const contactRoutes = require('./routes/contact');
 const roomRouter = require('./routes/room');
 
+// New admin routes
+const adminBookingsRouter = require('./routes/adminBookings');
+const adminRoomBookingsRouter = require('./routes/adminRoomBookings');
+
 app.use('/api/programs', programRouter);
 app.use('/api/bookings', bookingRouter);
 app.use('/api/auth', authRoutes);
 app.use('/api/facilities', facilityRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/rooms', roomRouter);
+
+// Register new admin routes
+app.use('/api/admin/bookings', adminBookingsRouter);
+app.use('/api/admin/room-bookings', adminRoomBookingsRouter);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
