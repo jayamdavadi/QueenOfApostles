@@ -48,19 +48,19 @@ export const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                title: "Mindfulness Retreat",
-                description: "A week of meditation and self-discovery",
-                image: "https://omilacombe.ca/wp-content/uploads/2023/05/Group-photo-850.jpg"
+                title: "Day of Reflection",
+                description: "A peaceful day to disconnect from distractions, featuring guided meditations, scripture readings, and quiet spiritual time.",
+                image: "https://images.unsplash.com/photo-1617720197345-5e5235ec6220?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               },
               {
-                title: "Yoga Workshop",
-                description: "Transform body and mind through yoga",
-                image: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                title: "Weekend Retreats for Adults",
+                description: "Multi-day retreats focused on themes like 'Finding God in Everyday Life'. Ideal for deep reflection and spiritual renewal.",
+                image: "https://images.unsplash.com/photo-1501060380799-184ae00cf089?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               },
               {
-                title: "Wellness Weekend",
-                description: "Reset and rejuvenate in nature",
-                image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                title: "Evening Candlelight Prayer",
+                description: "A once-a-month evening of music, scripture, and candlelight — perfect for quiet prayer and contemplation.",
+                image: "https://images.unsplash.com/photo-1738605287448-a0f65d68ebc7?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               }
             ].map((program, index) => (
               <div key={index} className="bg-gray-50 rounded-lg overflow-hidden shadow-md">
