@@ -2,6 +2,7 @@
 
 Queen of Apostles is a modern web application built to streamline room booking, event planning, and community engagement for the Queen of Apostles Recreation Centre. This full-stack solution features a React frontend and Node.js/Express backend, designed for ease of use by both users and administrators.
 
+🌐 Live Demo: https://queen-frontend-mauve.vercel.app/
 ---
 
 ## 📁 Project Structure
